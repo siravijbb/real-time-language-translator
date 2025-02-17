@@ -1,15 +1,12 @@
 import os
 import time
-import pygame
-from gtts import gTTS
 import streamlit as st
 import speech_recognition as sr
 from googletrans import LANGUAGES, Translator
 
 isTranslateOn = False
 
-translator = Translator() # Initialize the translator module.
-pygame.mixer.init()  # Initialize the mixer module.
+translator = Translator()  # Initialize the translator module.
 
 # Create a mapping between language names and language codes
 language_mapping = {name: code for code, name in LANGUAGES.items()}
@@ -20,34 +17,31 @@ def get_language_code(language_name):
 def translator_function(spoken_text, from_language, to_language):
     return translator.translate(spoken_text, src='{}'.format(from_language), dest='{}'.format(to_language))
 
-def text_to_voice(text_data, to_language):
-    myobj = gTTS(text=text_data, lang='{}'.format(to_language), slow=False)
-    myobj.save("cache_file.mp3")
-    audio = pygame.mixer.Sound("cache_file.mp3")  # Load a sound.
-    audio.play()
-    os.remove("cache_file.mp3")
-
 def main_process(output_placeholder, from_language, to_language):
-    
+
     global isTranslateOn
-    
+    translated_texts = []
+    current_text = ""
+
     while isTranslateOn:
 
         rec = sr.Recognizer()
         with sr.Microphone() as source:
-            output_placeholder.text("Listening...")
             rec.pause_threshold = 1
             audio = rec.listen(source, phrase_time_limit=10)
-        
-        try:
-            output_placeholder.text("Processing...")
-            spoken_text = rec.recognize_google(audio, language='{}'.format(from_language))
-            
-            output_placeholder.text("Translating...")
-            translated_text = translator_function(spoken_text, from_language, to_language)
 
-            text_to_voice(translated_text.text, to_language)
-    
+        try:
+            spoken_text = rec.recognize_google(audio, language='{}'.format(from_language))
+
+            current_text = "Translating...\n\n" + current_text
+            output_placeholder.text(current_text)
+
+            translated_text = translator_function(spoken_text, from_language, to_language)
+            translated_texts.append(translated_text.text)
+
+            current_text = translated_text.text + "\n\n" + current_text
+            output_placeholder.text(current_text)
+
         except Exception as e:
             print(e)
 
